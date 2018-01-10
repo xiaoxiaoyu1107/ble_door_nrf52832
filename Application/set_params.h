@@ -8,7 +8,7 @@
 #include "ble_gap.h"
 
 #define SET_KEY_CHECK_NUMBER		3
-#define	PARAMS_LEN					7
+#define	PARAMS_LEN					8
 
 
 //与动态口令相关的参量
@@ -32,6 +32,7 @@ extern uint8_t	VOL_VALUE;
 extern uint8_t	KEY_INPUT_USE_TIME;
 extern uint8_t	MOTO_DIR;
 extern uint8_t	TOUCH_DELAY;
+extern uint8_t	AD_MODEL;
 
 extern ble_gap_addr_t addr;
 

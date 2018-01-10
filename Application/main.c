@@ -164,6 +164,11 @@ int main(void) {
 
 
 	NRF_UICR->NFCPINS = 0;
+	
+	//使能DCDC
+//	NRF_POWER->DCDCEN = 1;
+	//关闭FPU
+//	NRF_FPU->UNUSED = 1;
 
 	//Initialize
 	timers_init();
@@ -216,16 +221,54 @@ int main(void) {
 
 	//使能电池服务
 	battery_level_init();
+	
+	//暂时关闭IIC和UART
+//	NRF_UART0->ENABLE = 0;
+//	NRF_TWI1->ENABLE = 0;
+//	NRF_CCM->ENABLE = 0;
+/*	NRF_SPI0->ENABLE = 0;
+	NRF_SPI1->ENABLE = 0;
+	NRF_SPI2->ENABLE = 0;
+	NRF_SPIM0->ENABLE = 0;
+	NRF_SPIM1->ENABLE = 0;
+	NRF_SPIM2->ENABLE = 0;
+	NRF_SPIS0->ENABLE = 0;
+	NRF_SPIS1->ENABLE = 0;
+	NRF_SPIS1->ENABLE = 0;
+	NRF_SPIS2->ENABLE = 0;
+	NRF_TEMP->TASKS_STOP = 1;
+	NRF_WDT->TASKS_START = 0;
+	NRF_RNG->TASKS_STOP = 1;
+	NRF_QDEC->TASKS_STOP = 1;
+	NRF_COMP->TASKS_STOP = 1;
+	NRF_LPCOMP->TASKS_STOP = 1;
+//	NRF_ECB->TASKS_STOPECB = 1;
+//	NRF_CCM->TASKS_STOP = 1;
+	NRF_TIMER3->TASKS_STOP = 1;
+	NRF_TIMER4->TASKS_STOP = 1;
+	NRF_PWM0->ENABLE = 0;
+	NRF_PWM1->ENABLE = 0;
+	NRF_PWM2->ENABLE = 0;
+//	NRF_I2S->ENABLE = 0;
+	NRF_TWIS0->ENABLE = 0;
+	NRF_TWIS1->ENABLE = 0;
+	NRF_TWIM0->ENABLE = 0;
+//	NRF_PDM->ENABLE = 0;
+*/	
+
 
 	//Enter main loop.
 	for (;;) {
+	//	__WFE();
+		//关闭DCDC
+	//	NRF_POWER->DCDCEN = 0;
 		power_manage();
 
 		//判断命令
-		if(operate_code_setted ==true) {
+/*		if(operate_code_setted ==true) {
 			operate_code_check(nus_data_recieve, nus_data_recieve_length);
 			operate_code_setted = false;
-		}
+		}*/
 		if(is_background_lit == true){
 			nrf_delay_ms(3000);
 			nrf_gpio_pin_clear( BATTERY_LEVEL_EN );

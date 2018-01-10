@@ -90,7 +90,7 @@ void wt5700_init(void) {
 	touch_iic_init();
 
 	//设置为slow down model
-	set_data = 0x72;//62
+	set_data = 0x52;//52
 	wt5700_i2c_write_byte(WT5700_SYS_CTL, set_data);
 
 	//将芯片设置成单触摸模式,1/2win sense

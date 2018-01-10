@@ -28,6 +28,7 @@
 
 #include "ble_init.h"
 #include "inter_flash.h"
+#include "set_params.h"
 //#include "fm260b.h"
 #include  "r301t.h"
 #include "beep.h"
@@ -88,15 +89,15 @@ static void sec_req_timeout_handler(void * p_context) {
 /***************************************
 *背景灯定时器任务处理函数
 ****************************************/
-static void backlit_timeout_handler(void * p_context) {
-	//UNUSED_PARAMETER(p_context);
-	if(is_background_lit == true) {
-		//关闭背景灯
-		nrf_gpio_pin_clear( BATTERY_LEVEL_EN );
-		//设置标识位
-		is_background_lit = false;
-	}
-
+//因为广播函数是在后面定义的，使用的话，先定义
+void advertising_init(void);
+static void ad_repeat_timeout_handler(void * p_context) {
+	UNUSED_PARAMETER(p_context);
+	
+	//开启广播
+	advertising_init();
+	ble_advertising_start(BLE_ADV_MODE_FAST);
+//	beep_didi(2);
 }
 
 /*********************************
@@ -105,6 +106,12 @@ static void backlit_timeout_handler(void * p_context) {
 void timers_init(void) {
 	uint32_t err_code;
 
+//	NRF_CLOCK->EVENTS_LFCLKSTARTED = 0;
+//	NRF_CLOCK->TASKS_LFCLKSTART = 1;
+//	while(NRF_CLOCK->EVENTS_LFCLKSTARTED == 0){
+		//do nothing
+//	}
+//	NRF_CLOCK->EVENTS_LFCLKSTARTED = 0;
 	// Initialize timer module.
 	APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_OP_QUEUE_SIZE, false);
 
@@ -115,10 +122,10 @@ void timers_init(void) {
 		sec_req_timeout_handler);
 		APP_ERROR_CHECK(err_code);
 		*/
-	//初始化背景灯定时器
-	err_code = app_timer_create(&m_backlit_timer_id,
-	APP_TIMER_MODE_SINGLE_SHOT,
-	backlit_timeout_handler);
+	//重复广播定时器
+	err_code = app_timer_create(&m_ad_repeat_timer_id,
+	APP_TIMER_MODE_REPEATED,
+	ad_repeat_timeout_handler);
 	APP_ERROR_CHECK(err_code);
 
 }
@@ -127,10 +134,10 @@ void application_timers_start(void) {
 	/* YOUR_JOB: Start your timers. below is an example of how to start a timer.
 	uint32_t err_code;
 	err_code = app_timer_start(m_app_timer_id, TIMER_INTERVAL, NULL);
-	APP_ERROR_CHECK(err_code);
+	APP_ERROR_CHECK(err_code);*/
 	uint32_t err_code;
 	err_code = app_timer_start(m_ad_repeat_timer_id, AD_REPEAT_DELAY, NULL);
-	APP_ERROR_CHECK(err_code);*/
+	APP_ERROR_CHECK(err_code);
 
 }
 
@@ -171,13 +178,16 @@ static void nus_data_handler(ble_nus_t * p_nus, uint8_t * p_data, uint16_t lengt
 	while(app_uart_put('\n') != NRF_SUCCESS);
 	*/
 	//将获取的数据存到全局变量，供operate_code_check函数用
-	if(operate_code_setted == false && is_ble_cmd_exe == false) {
+/*	if(operate_code_setted == false && is_ble_cmd_exe == false) {
 		//不在执行上位机发送的命令
 		for(int i = 0; i <length; i++) {
 			nus_data_recieve[i] = p_data[i];
 		}
 		nus_data_recieve_length = length;
 		operate_code_setted = true;
+	}*/
+	if(is_ble_cmd_exe == false){
+		operate_code_check(p_data, length);
 	}
 	//测试程序，将蓝牙串口的数据再返回给蓝牙串口
 //	ble_nus_string_send(&m_nus, nus_data_array, nus_data_array_length);
@@ -244,9 +254,10 @@ void conn_params_init(void) {
  *进入低功耗
  ***********************************/
 static void sleep_mode_enter(void) {
-	uint32_t err_code = bsp_indication_set(BSP_INDICATE_IDLE);
+/*	uint32_t err_code = bsp_indication_set(BSP_INDICATE_IDLE);
 	APP_ERROR_CHECK(err_code);
-
+*/
+	uint32_t err_code;
 	// Prepare wakeup buttons.
 	/*   err_code = bsp_btn_ble_sleep_mode_prepare();
 	   APP_ERROR_CHECK(err_code);
@@ -267,7 +278,10 @@ static void on_adv_evt(ble_adv_evt_t ble_adv_evt) {
 //            APP_ERROR_CHECK(err_code);
 		break;
 	case BLE_ADV_EVT_IDLE:
-		sleep_mode_enter();
+		if(AD_MODEL == 0){
+			sleep_mode_enter();
+		}
+	//	NRF_POWER->TASKS_LOWPWR = 1;
 		break;
 	default:
 		break;
@@ -335,8 +349,6 @@ static void on_ble_evt(ble_evt_t * p_ble_evt) {
 /************************
 *BLE事件分发
  ************************/
-//因为广播函数是在后面定义的，使用的话，先定义
-void advertising_init(void);
 
 static void ble_evt_dispatch(ble_evt_t * p_ble_evt) {
 
@@ -462,9 +474,10 @@ void uart_init(void) {
 void advertising_init(void) {
 	uint32_t      err_code;
 	ble_advdata_t advdata;
+	ble_advdata_t scanrsp;
 	ble_advdata_manuf_data_t manuf_data; //自定义厂商数据，这里为mac
 
-	uint8_t device_hard_info = BIT_TOUCH | BIT_FIG;
+	uint8_t device_hard_info = /*BIT_TOUCH*/BIT_TOUCH | BIT_FIG;
 	uint8_t device_info[BLE_GAP_ADDR_LEN + 1];//设备信息6位mac地址+硬件版本号
 
 	memset(&advdata, 0, sizeof(advdata));
@@ -489,6 +502,10 @@ void advertising_init(void) {
 //	advdata.uuids_complete.uuid_cnt = sizeof(m_adv_uuids) / sizeof(m_adv_uuids[0]);  
 //    advdata.uuids_complete.p_uuids  = m_adv_uuids;
 	advdata.p_manuf_specific_data = &manuf_data;
+	
+	memset(&scanrsp, 0, sizeof(scanrsp));
+    scanrsp.uuids_complete.uuid_cnt = sizeof(m_adv_uuids) / sizeof(m_adv_uuids[0]);
+    scanrsp.uuids_complete.p_uuids  = m_adv_uuids;
 
 	 ble_adv_modes_config_t options =  
     {  
@@ -496,12 +513,13 @@ void advertising_init(void) {
         BLE_ADV_DIRECTED_DISABLED,  
         BLE_ADV_DIRECTED_SLOW_DISABLED, 0,0,  
         BLE_ADV_FAST_ENABLED, APP_ADV_FAST_INTERVAL, APP_ADV_FAST_TIMEOUT_IN_SECONDS,  
-        BLE_ADV_SLOW_ENABLED, APP_ADV_SLOW_INTERVAL, APP_ADV_SLOW_TIMEOUT_IN_SECONDS
+    /*    BLE_ADV_SLOW_ENABLED, APP_ADV_SLOW_INTERVAL, APP_ADV_SLOW_TIMEOUT_IN_SECONDS*/
+		BLE_ADV_SLOW_DISABLED, APP_ADV_SLOW_INTERVAL, APP_ADV_SLOW_TIMEOUT_IN_SECONDS
     };  
 
 
 
-	err_code = ble_advertising_init(&advdata, NULL, &options, on_adv_evt, NULL);
+	err_code = ble_advertising_init(&advdata, &scanrsp, &options, on_adv_evt, NULL);
 	APP_ERROR_CHECK(err_code);
 //	err_code = ble_advdata_set(&advdata,NULL);
 //    APP_ERROR_CHECK(err_code);

@@ -84,14 +84,19 @@ void leds_init(void) {
 	nrf_gpio_cfg_output(TOUCH_IIC_EN_PIN);
 	nrf_gpio_pin_clear(TOUCH_IIC_EN_PIN);
 	//设置NFC引脚
-	/*	nrf_gpio_cfg_output(NFC_A_PIN);
-		nrf_gpio_pin_clear(NFC_A_PIN);
-		nrf_gpio_cfg_output(NFC_B_PIN);
-		nrf_gpio_pin_clear(NFC_B_PIN);*/
+	nrf_gpio_cfg_output(NFC_A_PIN);
+	nrf_gpio_pin_clear(NFC_A_PIN);
+	nrf_gpio_cfg_output(NFC_B_PIN);
+	nrf_gpio_pin_clear(NFC_B_PIN);
+	
+//	nrf_gpio_cfg_input(NFC_A_PIN,NRF_GPIO_PIN_NOPULL);
+//	nrf_gpio_cfg_input(NFC_B_PIN,NRF_GPIO_PIN_NOPULL);
 	//无用的引脚24
 	nrf_gpio_cfg_output(24);
 	nrf_gpio_pin_clear(24);
-
+	
+//	nrf_gpio_cfg_input(24,NRF_GPIO_PIN_NOPULL);
+	
 }
 
 /***********************************************
@@ -455,9 +460,11 @@ static void nrst_all(void) {
 *		event_pins_high_to_low	状态由高到低的引脚
 **************************************************************/
 static void touch_finger_int_handler(uint32_t event_pins_low_to_high, uint32_t event_pins_high_to_low) {
+	
 	//触摸按键中断响应
 	if (event_pins_high_to_low & (1 << TOUCH_IIC_INT_PIN)) {
 		//触摸中断由高变低
+		
 		//1、开启背景灯
 		if(is_background_lit == false) {
 			nrf_gpio_pin_set( BATTERY_LEVEL_EN );

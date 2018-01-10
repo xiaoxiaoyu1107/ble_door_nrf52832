@@ -29,6 +29,7 @@ uint8_t		VOL_VALUE;	//实际值<<4位
 uint8_t		KEY_INPUT_USE_TIME;
 uint8_t		MOTO_DIR;
 uint8_t		TOUCH_DELAY;//按键的延迟
+uint8_t		AD_MODEL;//广播模式
 
 
 //与设置mac有关的变量
@@ -63,6 +64,7 @@ void set_default_params(void) {
 		KEY_INPUT_USE_TIME = flash_store_params[5];//键盘密码输入密码有效时间，以10min为单位
 		MOTO_DIR = flash_store_params[6];//电机的方向
 		TOUCH_DELAY = flash_store_params[7];//按键的延迟
+		AD_MODEL = flash_store_params[8];//广播模式
 	} else {
 		OPEN_TIME = 0x03;//电机转动时间
 		DOOR_OPEN_HOLD_TIME = 0x32;//开门保持时间 50*0.1s=5s
@@ -71,6 +73,7 @@ void set_default_params(void) {
 		KEY_INPUT_USE_TIME = 0x05;//键盘密码输入密码有效时间，以10min为单位
 		MOTO_DIR = 0;//电机方向
 		TOUCH_DELAY = 10;
+		AD_MODEL = 0;
 	}
 
 #if defined(BLE_DOOR_DEBUG)

@@ -310,6 +310,8 @@ static void set_param(uint8_t *p_data, uint16_t length) {
 	MOTO_DIR = p_data[6];
 	//按键延迟
 	TOUCH_DELAY = p_data[7];
+	//广播模式
+	AD_MODEL = p_data[8];
 
 	memset(flash_write_data, 0, BLOCK_STORE_SIZE);
 	//写入标记'w'
@@ -424,7 +426,9 @@ static void open_battery_source(void) {
 *获取电池电量，大致1~~~0.1V
 ****************************************************/
 static void get_battery_level(uint8_t *p_data, uint16_t length) {
-	uint8_t tmp;
+	uint16_t tmp;
+	uint8_t level_ten;
+	uint8_t level_one;
 
 	//1、开启电源使能
 	open_battery_source();
@@ -432,15 +436,18 @@ static void get_battery_level(uint8_t *p_data, uint16_t length) {
 	saadc_sampling_event_enable();
 	nrf_delay_ms(1000);
 	//3、获取电量数据
-	tmp = (battery_level_value &0x0ff0) >>4;
+	tmp = ((battery_level_value &0x0fff) *10 ) >>4;
+	tmp = tmp + 60;
 	//4、关闭电源使能
 	nrf_gpio_pin_clear(BATTERY_LEVEL_EN);
 
 	//将命令加上0x40,返回给app
 	nus_data_send[0] = p_data[0] + 0x40;
-	memcpy(&nus_data_send[1], &tmp, 1);
-	nus_data_send[1] = nus_data_send[1] + 6;
-	nus_data_send_length = 2;
+	level_ten = tmp /10;
+	level_one = tmp %10;
+	memcpy(&nus_data_send[1], &level_ten, 1);
+	memcpy(&nus_data_send[2], &level_one, 1);
+	nus_data_send_length = 3;
 	ble_nus_string_send(&m_nus, nus_data_send, nus_data_send_length);
 
 }
@@ -1011,7 +1018,7 @@ void operate_code_check(uint8_t *p_data, uint16_t length) {
 		break;
 
 	case SET_PARAMS://设置参量
-		if(length == PARAMS_LEN + 1) { //6字节
+		if(length == PARAMS_LEN + 1) { //9字节
 			if(is_superkey_checked == true) { //如果验证了超级密码
 				is_ble_cmd_exe = true;
 				set_param(p_data, length);

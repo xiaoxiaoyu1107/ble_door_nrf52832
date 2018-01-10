@@ -17,7 +17,7 @@
 #include "set_params.h"
 
 volatile uint8_t state = 1;
-static const nrf_drv_timer_t  m_timer = NRF_DRV_TIMER_INSTANCE(3); //因为使用了协议栈，不能使用定时器0
+static const nrf_drv_timer_t  m_timer = NRF_DRV_TIMER_INSTANCE(2); //因为使用了协议栈，不能使用定时器0
 static nrf_ppi_channel_t m_ppi_channel;
 static uint32_t m_adc_evt_counter;
 
@@ -63,7 +63,7 @@ void saadc_sampling_event_enable(void) {
 
 }
 
-static void saadc_callback(nrf_drv_saadc_evt_t const * p_event) {
+static void saadc_callback	(nrf_drv_saadc_evt_t const * p_event) {
 
 	if (p_event->type == NRF_DRV_SAADC_EVT_DONE) {
 		ret_code_t err_code;
